@@ -20,27 +20,45 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 export default function Home() {
   const [showAddIncomeModal, setShowAddIncomeModal] = useState(false);
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
-
   const [balance, setBalance] = useState(0);
 
-  const { expenses, income } = useContext(financeContext);
-  const { user } = useContext(authContext);
+  const { user, loading: authLoading } = useContext(authContext);
+  const { expenses, income, loading: financeLoading } = useContext(financeContext);
 
+  // Move useEffect here
   useEffect(() => {
+    // Clear balance when user changes or loading states change 
+    if (authLoading || financeLoading) 
+    {  setBalance(0);
+       return;  // Don't update balance while loading
+    }
+    if (!user) {
+      setBalance(0);
+      return;
+    } 
+
+    if (income.length === 0 && expenses.length === 0) {
+      setBalance(0);
+      return;
+    }
+
     const newBalance =
-      income.reduce((total, i) => {
-        return total + i.amount;
-      }, 0) -
-      expenses.reduce((total, e) => {
-        return total + e.total;
-      }, 0);
+      income.reduce((total, i) => total + i.amount, 0) -
+      expenses.reduce((total, e) => total + e.total, 0);
 
     setBalance(newBalance);
-  }, [expenses, income]);
+  }, [user, authLoading, financeLoading, income, expenses]); 
 
+  console.log("authLoading " + authLoading + " financeLoading"+ financeLoading);
+  
   if (!user) {
     return <SignIn />;
   }
+
+  if (authLoading || financeLoading) {
+    return <p>Loading...</p>;
+  }
+  
 
   return (
     <>
